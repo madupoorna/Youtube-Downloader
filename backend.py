@@ -1,30 +1,34 @@
+import os, re
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-import os, re
 from yt_dlp import YoutubeDL
 
 app = FastAPI()
 
+# Base directory for file paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Serve static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 # Home page
 @app.get("/")
 def home():
-    return FileResponse("static/index.html")
+    return FileResponse(os.path.join(BASE_DIR, "static", "downloader.html"))
 
-# Download folder
-DOWNLOAD_FOLDER = "downloads"
+# Download folder (temporary, Vercel uses ephemeral filesystem)
+DOWNLOAD_FOLDER = os.path.join(BASE_DIR, "downloads")
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
-# Helper function to fetch video info
+# Helper to fetch video info
 def get_video_info(url: str):
     ydl_opts = {}
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
     return info
 
+# Info endpoint
 @app.get("/info")
 def info(url: str = Query(..., description="YouTube video URL")):
     try:
@@ -35,43 +39,37 @@ def info(url: str = Query(..., description="YouTube video URL")):
         info = get_video_info(url)
         formats = {}
 
-        # Helper to convert resolution/abr to int for sorting
         def to_int(val):
             if not val:
                 return 0
             return int(re.sub(r'\D','', str(val)))
 
-        # Helper to get file size in MB (or None if unknown)
         def size_mb(f):
             size = f.get('filesize') or f.get('filesize_approx')
             if not size:
                 return None
             return round(size / (1024*1024), 2)
 
-        # Select best encodings, remove duplicates
+        # Keep best encoding and remove duplicates
         for f in info['formats']:
             ext = f.get('ext')
             if ext not in ['mp4', 'webm', 'm4a', 'mp3']:
                 continue
 
             ftype = 'audio' if f.get('acodec') != 'none' and f.get('vcodec') == 'none' else 'video'
-
-            # Use a key to group multiple encodings
             key = f"{f.get('resolution') if ftype=='video' else f.get('abr')}_{ftype}"
 
-            # Keep only best encoding
             if key in formats:
                 existing = formats[key]
                 if ftype == 'video':
                     if (f.get('fps') or 0) > (existing.get('fps') or 0):
                         formats[key] = f
-                else:  # audio
+                else:
                     if (f.get('abr') or 0) > (existing.get('abr') or 0):
                         formats[key] = f
             else:
                 formats[key] = f
 
-        # Prepare final list
         final_formats = []
         for f in formats.values():
             ftype = 'audio' if f.get('acodec') != 'none' and f.get('vcodec') == 'none' else 'video'
@@ -85,18 +83,9 @@ def info(url: str = Query(..., description="YouTube video URL")):
                 'size_mb': size_mb(f)
             })
 
-        # Sort: video by resolution descending, audio by bitrate descending
-        video_formats = sorted(
-            [f for f in final_formats if f['type']=='video'],
-            key=lambda x: to_int(x['resolution']),
-            reverse=True
-        )
-        audio_formats = sorted(
-            [f for f in final_formats if f['type']=='audio'],
-            key=lambda x: to_int(x['abr']),
-            reverse=True
-        )
-
+        # Sort
+        video_formats = sorted([f for f in final_formats if f['type']=='video'], key=lambda x: to_int(x['resolution']), reverse=True)
+        audio_formats = sorted([f for f in final_formats if f['type']=='audio'], key=lambda x: to_int(x['abr']), reverse=True)
         all_formats = video_formats + audio_formats
 
         return {
@@ -119,7 +108,6 @@ def download(url: str = Query(...), format_id: str = Query(...)):
         if not url.startswith("http"):
             url = "https://" + url
 
-        # Safe filename
         info = get_video_info(url)
         filename = re.sub(r'[\\/*?:"<>|]', "", info['title'])
         outtmpl = os.path.join(DOWNLOAD_FOLDER, filename + ".%(ext)s")
@@ -128,10 +116,11 @@ def download(url: str = Query(...), format_id: str = Query(...)):
             'format': format_id,
             'outtmpl': outtmpl
         }
+
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-        # Get downloaded file path
+        # Return downloaded file
         for ext in ['mp4','webm','m4a','mp3']:
             file_path = os.path.join(DOWNLOAD_FOLDER, f"{filename}.{ext}")
             if os.path.exists(file_path):
@@ -143,6 +132,6 @@ def download(url: str = Query(...), format_id: str = Query(...)):
         print("❌ Download error:", e)
         return JSONResponse(content={"error": str(e)}, status_code=400)
 
-#if __name__ == "__main__":
-#   import uvicorn
-#  uvicorn.run("backend:app", host="127.0.0.1", port=8000, reload=True)
+#if __name__ == "__main__": 
+#   import uvicorn 
+#   uvicorn.run("backend:app", host="127.0.0.1", port=8000, reload=True)
