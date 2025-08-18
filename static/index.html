@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YouTube Downloader</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+<div class="bg-white p-6 rounded shadow-md w-full max-w-lg">
+    <h1 class="text-2xl font-bold mb-4 text-center">YouTube Downloader</h1>
+
+    <!-- URL Input + Fetch Button -->
+    <div class="flex mb-4 items-center">
+        <input id="urlInput" type="text" placeholder="Enter YouTube URL" class="flex-grow border p-2 rounded mr-2">
+        <button onclick="fetchVideoInfo()" class="bg-blue-600 text-white px-4 rounded hover:bg-blue-700 flex items-center">
+            <span id="fetchText">Fetch</span>
+            <svg id="spinner" class="animate-spin h-5 w-5 ml-2 hidden text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Thumbnail -->
+    <div id="thumbnailContainer" class="mb-4 hidden">
+        <img id="thumbnail" src="" alt="Video Thumbnail" class="w-full rounded">
+    </div>
+
+    <!-- Video Info -->
+    <div id="videoInfo" class="mb-4 hidden">
+        <h2 id="videoTitle" class="font-semibold text-lg mb-2"></h2>
+        <p id="videoAuthor" class="text-gray-600 mb-2"></p>
+        <select id="formatSelect" class="w-full border p-2 rounded mb-4"></select>
+        <a id="downloadBtn" href="#" class="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Download</a>
+    </div>
+
+    <!-- Error Message -->
+    <p id="errorMsg" class="text-red-500 hidden mt-2"></p>
+</div>
+
+<script>
+async function fetchVideoInfo() {
+    const url = document.getElementById('urlInput').value.trim();
+    const errorMsg = document.getElementById('errorMsg');
+    errorMsg.classList.add('hidden');
+    errorMsg.textContent = '';
+
+    if (!url) return;
+
+    const spinner = document.getElementById('spinner');
+    const fetchText = document.getElementById('fetchText');
+
+    // Show spinner
+    spinner.classList.remove('hidden');
+    fetchText.textContent = 'Fetching...';
+
+    try {
+        const res = await fetch(`/info?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+
+        if (data.error) {
+            errorMsg.textContent = data.error;
+            errorMsg.classList.remove('hidden');
+            return;
+        }
+
+        // Show thumbnail
+        const thumbContainer = document.getElementById('thumbnailContainer');
+        const thumb = document.getElementById('thumbnail');
+        thumb.src = data.thumbnail;
+        thumbContainer.classList.remove('hidden');
+
+        // Show video info
+        document.getElementById('videoTitle').textContent = data.title;
+        document.getElementById('videoAuthor').textContent = `By ${data.author}`;
+        const videoInfoDiv = document.getElementById('videoInfo');
+        videoInfoDiv.classList.remove('hidden');
+
+        // Populate dropdown
+        const formatSelect = document.getElementById('formatSelect');
+        formatSelect.innerHTML = '';
+        data.formats.forEach(f => {
+            let label;
+            if (f.type === 'video') {
+                label = `Video - ${f.resolution} ${f.fps ? f.fps + 'fps' : ''}`;
+            } else {
+                label = `Audio - ${f.abr}kbps`;
+            }
+
+            // Show size in MB if available, else unknown
+            if (f.size_mb !== null) {
+                label += ` (${f.size_mb} MB)`;
+            } else {
+                label += ` (unknown size)`;
+            }
+
+            const option = document.createElement('option');
+            option.value = f.format_id;
+            option.textContent = label;
+            formatSelect.appendChild(option);
+        });
+
+        // Update download link
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.onclick = () => {
+            const selectedFormat = formatSelect.value;
+            downloadBtn.href = `/download?url=${encodeURIComponent(url)}&format_id=${selectedFormat}`;
+        };
+
+    } catch (err) {
+        console.error(err);
+        errorMsg.textContent = 'Failed to fetch video info.';
+        errorMsg.classList.remove('hidden');
+    } finally {
+        // Hide spinner
+        spinner.classList.add('hidden');
+        fetchText.textContent = 'Fetch';
+    }
+}
+</script>
+</body>
+</html>
