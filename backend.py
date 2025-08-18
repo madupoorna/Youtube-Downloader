@@ -143,6 +143,6 @@ def download(url: str = Query(...), format_id: str = Query(...)):
         print("❌ Download error:", e)
         return JSONResponse(content={"error": str(e)}, status_code=400)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("backend:app", host="127.0.0.1", port=8000, reload=True)
+#if __name__ == "__main__":
+#   import uvicorn
+#  uvicorn.run("backend:app", host="127.0.0.1", port=8000, reload=True)
