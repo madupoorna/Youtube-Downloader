@@ -10,7 +10,7 @@ app = FastAPI()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Serve static files
-app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+app.mount("/public", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 # Home page
 @app.get("/")
