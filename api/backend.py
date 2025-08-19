@@ -1,21 +1,30 @@
 import os, re
 from fastapi import FastAPI, Query
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from yt_dlp import YoutubeDL
-
-app = FastAPI()
 
 # Base directory for file paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Serve static files
-app.mount("/public", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+app = FastAPI()
+
+# Mount public folder
+app.mount("/public", StaticFiles(directory=os.path.join(BASE_DIR, "../public"), html=True), name="public")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Home page
 @app.get("/")
 def home():
-    return FileResponse(os.path.join(BASE_DIR, "public", "downloader.html"))
+    return RedirectResponse("/public/downloader.html")
 
 # Download folder
 DOWNLOAD_FOLDER = os.path.join(BASE_DIR, "downloads")
@@ -31,6 +40,7 @@ def get_video_info(url: str):
 # Info endpoint
 @app.get("/info")
 def info(url: str = Query(..., description="YouTube video URL")):
+    print("asd")
     try:
         url = url.strip()
         if not url.startswith("http"):
@@ -132,6 +142,6 @@ def download(url: str = Query(...), format_id: str = Query(...)):
         print("❌ Download error:", e)
         return JSONResponse(content={"error": str(e)}, status_code=400)
 
-#if __name__ == "__main__": 
-#   import uvicorn 
-#   uvicorn.run("backend:app", host="127.0.0.1", port=8000, reload=True)
+# if __name__ == "__main__": 
+#    import uvicorn 
+#    uvicorn.run("backend:app", host="127.0.0.1", port=8000, reload=True)
