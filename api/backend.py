@@ -20,6 +20,12 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 # Helper to fetch video info
 def get_video_info(url: str):
     ydl_opts = {}
+    if 'YOUTUBE_COOKIES' in os.environ:
+        cookie_file = "/tmp/cookies.txt"
+        with open(cookie_file, "w") as f:
+            f.write(os.environ['YOUTUBE_COOKIES'])
+        ydl_opts['cookiefile'] = cookie_file
+
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
     return info
@@ -113,6 +119,12 @@ def download(url: str = Query(...), format_id: str = Query(...)):
             'format': format_id,
             'outtmpl': outtmpl
         }
+
+        if 'YOUTUBE_COOKIES' in os.environ:
+            cookie_file = "/tmp/cookies.txt"
+            with open(cookie_file, "w") as f:
+                f.write(os.environ['YOUTUBE_COOKIES'])
+            ydl_opts['cookiefile'] = cookie_file
 
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
