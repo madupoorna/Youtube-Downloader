@@ -15,9 +15,9 @@ app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), na
 # Home page
 @app.get("/")
 def home():
-    return FileResponse(os.path.join(BASE_DIR, "static", "downloader.html"))
+    return FileResponse(os.path.join(BASE_DIR, "public", "downloader.html"))
 
-# Download folder (temporary, Vercel uses ephemeral filesystem)
+# Download folder
 DOWNLOAD_FOLDER = os.path.join(BASE_DIR, "downloads")
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
