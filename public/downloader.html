@@ -55,7 +55,7 @@ async function fetchVideoInfo() {
     fetchText.textContent = 'Fetching...';
 
     try {
-        const res = await fetch(`/info?url=${encodeURIComponent(url)}`);
+        const res = await fetch(`/api/info?url=${encodeURIComponent(url)}`);
         const data = await res.json();
 
         if (data.error) {
@@ -104,7 +104,7 @@ async function fetchVideoInfo() {
         const downloadBtn = document.getElementById('downloadBtn');
         downloadBtn.onclick = () => {
             const selectedFormat = formatSelect.value;
-            downloadBtn.href = `/download?url=${encodeURIComponent(url)}&format_id=${selectedFormat}`;
+            downloadBtn.href = `/api/download?url=${encodeURIComponent(url)}&format_id=${selectedFormat}`;
         };
 
     } catch (err) {

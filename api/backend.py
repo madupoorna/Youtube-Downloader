@@ -38,7 +38,7 @@ def get_video_info(url: str):
     return info
 
 # Info endpoint
-@app.get("/info")
+@app.get("/api/info")
 def info(url: str = Query(..., description="YouTube video URL")):
     print("asd")
     try:
@@ -111,7 +111,7 @@ def info(url: str = Query(..., description="YouTube video URL")):
         return JSONResponse(content={"error": str(e)}, status_code=400)
 
 # Download endpoint
-@app.get("/download")
+@app.get("/api/download")
 def download(url: str = Query(...), format_id: str = Query(...)):
     try:
         url = url.strip()
