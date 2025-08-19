@@ -1,11 +1,13 @@
 {
-  "version": 2,
   "builds": [
-    { "src": "api/backend.py", "use": "@vercel/python" }
+    {
+      "src": "api/backend.py",
+      "use": "@vercel/python"
+    }
   ],
   "routes": [
-    { "src": "/info", "dest": "/api/backend.py" },
-    { "src": "/download", "dest": "/api/backend.py" },
-    { "src": "/", "dest": "/api/backend.py" }
+    { "src": "/api/(.*)", "dest": "api/backend.py" },
+    { "src": "/", "dest": "/public/downloader.html" },
+    { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
