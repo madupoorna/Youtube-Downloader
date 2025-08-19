@@ -5,21 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from yt_dlp import YoutubeDL
 
-# Base directory for file paths
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 app = FastAPI()
-
-# Mount public folder
-app.mount("/public", StaticFiles(directory=os.path.join(BASE_DIR, "../public"), html=True), name="public")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # or specific origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Home page
 @app.get("/")
