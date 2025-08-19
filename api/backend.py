@@ -13,6 +13,7 @@ def home():
     return RedirectResponse("/public/downloader.html")
 
 # Download folder
+BASE_DIR = "/tmp"
 DOWNLOAD_FOLDER = os.path.join(BASE_DIR, "downloads")
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
